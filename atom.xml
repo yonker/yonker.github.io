@@ -145,11 +145,11 @@
       <category term="algorithm" scheme="https://yonker.github.io/categories/algorithm/"/>
     
     
-      <category term="bubble" scheme="https://yonker.github.io/tags/bubble/"/>
-    
       <category term="sort" scheme="https://yonker.github.io/tags/sort/"/>
     
       <category term="algorithm" scheme="https://yonker.github.io/tags/algorithm/"/>
+    
+      <category term="bubble" scheme="https://yonker.github.io/tags/bubble/"/>
     
   </entry>
   
@@ -221,11 +221,11 @@
       <category term="algorithm" scheme="https://yonker.github.io/categories/algorithm/"/>
     
     
+      <category term="heap" scheme="https://yonker.github.io/tags/heap/"/>
+    
       <category term="sort" scheme="https://yonker.github.io/tags/sort/"/>
     
       <category term="algorithm" scheme="https://yonker.github.io/tags/algorithm/"/>
-    
-      <category term="heap" scheme="https://yonker.github.io/tags/heap/"/>
     
   </entry>
   
