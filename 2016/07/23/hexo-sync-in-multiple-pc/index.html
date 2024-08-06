@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yonker.me","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="声明本文只是给类似我这样的git新人做参考，对git比较熟悉的话可以无视了。由于自身对git的了解就不是特别深，所以可能有些地方会有错误，欢迎各位指正。（本文有在微博上接受geekrainy的帮助，对此表示谢意)ps：建议git相关操作都在bash上进行操作。不依赖windows下gui">
+<meta property="og:type" content="article">
+<meta property="og:title" content="利用git解决hexo博客多PC间同步问题">
+<meta property="og:url" content="https://yonker.me/2016/07/23/hexo-sync-in-multiple-pc/index.html">
+<meta property="og:site_name" content="Yonker&#39;s Blog">
+<meta property="og:description" content="声明本文只是给类似我这样的git新人做参考，对git比较熟悉的话可以无视了。由于自身对git的了解就不是特别深，所以可能有些地方会有错误，欢迎各位指正。（本文有在微博上接受geekrainy的帮助，对此表示谢意)ps：建议git相关操作都在bash上进行操作。不依赖windows下gui">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2016-07-23T14:11:25.000Z">
+<meta property="article:modified_time" content="2024-08-06T10:11:42.180Z">
+<meta property="article:author" content="yonker">
+<meta property="article:tag" content="git">
+<meta property="article:tag" content="hexo">
+<meta property="article:tag" content="sync">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://yonker.me/2016/07/23/hexo-sync-in-multiple-pc/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>利用git解决hexo博客多PC间同步问题 | Yonker's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Yonker's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Yonker's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">码农，程序猿，未来的昏析师</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://yonker.me/2016/07/23/hexo-sync-in-multiple-pc/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="yonker">
+      <meta itemprop="description" content="青春不常有，跟着感觉走">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Yonker's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          利用git解决hexo博客多PC间同步问题
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2016-07-23 14:11:25" itemprop="dateCreated datePublished" datetime="2016-07-23T14:11:25+00:00">2016-07-23</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-08-06 10:11:42" itemprop="dateModified" datetime="2024-08-06T10:11:42+00:00">2024-08-06</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%99%E7%A8%8B/" itemprop="url" rel="index"><span itemprop="name">教程</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="声明"><a href="#声明" class="headerlink" title="声明"></a>声明</h2><p>本文只是给类似我这样的git新人做参考，对git比较熟悉的话可以无视了。由于自身对git的了解就不是特别深，所以可能有些地方会有错误，欢迎各位指正。（本文有在微博上接受geekrainy的帮助，对此表示谢意)<br>ps：建议git相关操作都在bash上进行操作。不依赖windows下gui</p>
+<span id="more"></span>
+
+<h2 id="场景"><a href="#场景" class="headerlink" title="场景"></a>场景</h2><p>单位和家里两PC，同时都想更新blog。而由于hexo没有后台，而且全部文件都在本地生成，所以如果公司电脑上发表了A文章后回家又写了篇B文章，在家里上传后你会发现只有B文章而A文章没了（因为家里的PC上没有A文章的md文件），所以多台电脑同时用来写文章的时候，需要解决备份问题。</p>
+<p>而常用的备份方案无非两种：</p>
+<h3 id="百度云，Dropbox等网盘云备份"><a href="#百度云，Dropbox等网盘云备份" class="headerlink" title="百度云，Dropbox等网盘云备份"></a>百度云，Dropbox等网盘云备份</h3><p>（不清楚Dropbox，仅以百度云为例）<br>优点：免费且操作简单<br>不足：</p>
+<ol>
+<li>备份后同步比较麻烦，每次另一台电脑上都需要手动下载备份文件夹手动覆盖。</li>
+<li>开启云端自动备份的时候，写blog的过程中如果保存了文件，会触发百度云的上传，而上传过程中产生的<code>xxx.cfg</code>文件会让hexo解析失败，导致<code>hexo s</code>生成的本地服务器进程停止，不方便边写边预览</li>
+</ol>
+<p>因此此方案作废</p>
+<h3 id="利用第三方的git服务备份"><a href="#利用第三方的git服务备份" class="headerlink" title="利用第三方的git服务备份"></a>利用第三方的git服务备份</h3><p>优点：部署完成后更新方便，hexo 更新完后只需要再更新全站到git即可<br>缺点：部署过程相对比较麻烦，对新手不友好（其实是由于对git的理解不深导致的）<br>国内外现在知名的git服务提供商主要有：<br>github、gitcafe、bitbucket、oschina、coding等</p>
+<p>由于blog文件夹里有些插件配置文件会涉及比较敏感的隐私数据（云服务商的appsecret key之类的），所以建议放<strong>私有仓库</strong>（当然也可以把配置文件单独拿出来然后其余的全部扔到git的公众仓库，这个看人，本文重点也不在于git服务商的选择或者公有私有库之争）<br>上面提及的5家服务商里，<code>github</code>、<code>gitcafe</code>的私有库是收费的，而另外三家的私有库目前免费。各位可以自行选择，我个人选择了<a href="http://git.oschina.net/" title="oschina">oschina</a></p>
+<h2 id="配置过程"><a href="#配置过程" class="headerlink" title="配置过程"></a>配置过程</h2><p>git多网站多账户部署过程可以参考<a href="http://chitanda.me/2015/06/11/tips-for-setup-hexo/#git%E5%A4%9A%E7%BD%91%E7%AB%99ssh%E9%83%A8%E7%BD%B2%E6%96%B9%E6%A1%88" title="git多网站ssh部署方案">git多网站ssh部署方案</a></p>
+<h3 id="上传blog到git"><a href="#上传blog到git" class="headerlink" title="上传blog到git"></a>上传blog到git</h3><p>这个操作建议在blog进度最新的PC上进行的，否则后面解决冲突会比较麻烦<br>在osc上添加公钥，建立新respo等过程略过不讲。</p>
+<ol>
+<li><p>删除文件夹内原有的<code>.git</code>缓存文件夹并编辑<code>.gitignore</code>文件</p>
+<blockquote>
+<ul>
+<li>有些插件或者主题是git上下过来安装的话，每个文件夹下都会有对应的.git 文件夹，记得先删掉，否则会和blog仓库冲突<br>（.git默认是隐藏文件夹，需要先开启显示隐藏文件夹。##.git文件夹被删除后整个文件对应的git仓库状态也会被清空##)</li>
+</ul>
+</blockquote>
+<hr>
+<blockquote>
+<ul>
+<li><code>.gitignore</code>文件作用是声明不被git记录的文件，blog根目录下的<code>.gitignore</code>是hexo初始化带来的，可以先删除或者直接编辑，对hexo不会有影响。建议<code>.gitignore</code>内添加以下内容： <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">/.deploy_git</span><br><span class="line">/public</span><br><span class="line">/_config.yml</span><br></pre></td></tr></table></figure></li>
+</ul>
+<ol>
+<li><code>.deploy_git</code>是hexo默认的.git配置文件夹，不需要同步</li>
+<li><code>public</code>内文件是根据<code>source</code>文件夹内容自动生成，不需要备份，不然每次改动内容太多</li>
+<li>即使是私有仓库，除去在线服务商员工可以看到的风险外，还有云服务商被攻击造成泄漏等可能，所以不建议将配置文件传上去</li>
+</ol>
+</blockquote>
+</li>
+<li><p>初始化仓库<br> blog根目录下执行以下代码：</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">git init</span><br><span class="line">git remote add origin &lt;server&gt;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p><code>&lt;server&gt;</code>是指在线仓库的地址。<code>origin</code>是本地分支,<code>remote add</code>操作会将本地仓库映射到云端</p>
+</blockquote>
+</li>
+<li><p>添加本地文件到仓库并同步到git上</p>
+ <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">git add .  <span class="comment">#添加blog目录下所有文件，注意有个`.`（`.gitignore`声明过的文件不包含在内)</span></span><br><span class="line">git commit -m <span class="string">&quot;first commit&quot;</span> <span class="comment">#添加更新说明</span></span><br><span class="line">git push -u origin master <span class="comment">#推送更新到云端服务器</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>在执行这步之前一定要注意检查下<code>.gitignore</code>文件的内容，看看是否正确的把一些文件夹忽略掉了。如果加错了的话可以用<br> <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">rm</span> -r --cached .</span><br></pre></td></tr></table></figure><br>撤销添加操作。</p>
+</blockquote>
+</li>
+</ol>
+<p>到这里的时候，云端备份已经完成</p>
+<h3 id="将git的内容同步到本地"><a href="#将git的内容同步到本地" class="headerlink" title="将git的内容同步到本地"></a>将git的内容同步到本地</h3><p>假设之前将A电脑里的内容备份到git了，现在B电脑准备同步内容。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">git init</span><br><span class="line">git remote add origin &lt;server&gt; <span class="comment">#将本地文件和云端仓库映射起来。这步不可以跳过</span></span><br><span class="line">git fetch --all</span><br><span class="line">git reset --hard origin/master</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p><code>fetch</code>是将云端所有内容拉取下来。<code>reset</code>则是不做任何合并处理，强制将本地内容指向刚刚同步下来的云端内容（正常pull的话需要考虑不少冲突的问题，比较麻烦。）</p>
+</blockquote>
+<h3 id="更新文章后的同步操作"><a href="#更新文章后的同步操作" class="headerlink" title="更新文章后的同步操作"></a>更新文章后的同步操作</h3><p>假设在B电脑上写完了文章，也<code>hexo d -g</code>发布完了，这时候需要将新文章的md文件更新上去。（其实就是提交更新给git，会的可以无视了）<br>同一个bash界面下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git add .</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>这时候可以用<code>git status</code>查看状态，一般会显示刚刚更改过的文件状态。如：</p>
+</blockquote>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">On branch master</span><br><span class="line">Changes to be committed:</span><br><span class="line">    (use <span class="string">&quot;git reset HEAD &lt;file&gt;...&quot;</span> to unstage)</span><br><span class="line"></span><br><span class="line">        modified:   db.json</span><br><span class="line">        new file:   <span class="built_in">source</span>/_posts/test.md</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>上面的输出状态即说明’db.json’文件做了更改，<code>source/_posts</code>目录下新增了’test.md’文件。</p>
+</blockquote>
+<p>然后对更改添加说明并推送到远程仓库.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">git commit -m <span class="string">&#x27;更新信息&#x27;</span></span><br><span class="line">git push</span><br></pre></td></tr></table></figure>
+<p>当显示类似如下提示的时候，即表示备份成功</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">To git@git.oschina.net:xxxx/blog-backup.git</span><br><span class="line"> + 2c77e1e...5616bc6 master -&gt; master (forced update)</span><br></pre></td></tr></table></figure>
+<p>再到A电脑上的时候，只需要</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git pull</span><br></pre></td></tr></table></figure>
+<p>即可同步更新</p>
+<h2 id="给git配置sock5代理"><a href="#给git配置sock5代理" class="headerlink" title="给git配置sock5代理"></a>给git配置sock5代理</h2><p>由于某些众所周知的缘故，所以github时不时的有时候速度会很慢，这种情况下本地代理就派上用场了。<br>这里以给git的SSH传输方式配置本地SS代理为例说下配置过程：</p>
+<ol>
+<li>打开<code>~/.ssh/config</code>文件。</li>
+<li>在<code>Host github *.github.com</code>下添加以下字段： <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Proxycommand ssh -S 127.0.0.1:1080 %h %p</span><br></pre></td></tr></table></figure></li>
+<li>测试连接<br>保存退出后重启git bash。<br>输入<code>ssh -vT git@github.com</code>，当返回<code>Hi username! You&#39;ve successfully authenticated, but GitHub does not provide shell access.</code>的时候即说明配置成功<br>之后github的所有流量都会走本地的ss代理。</li>
+</ol>
+<p>转载于：<a href="http://chitanda.me/2015/06/18/hexo-sync-in-multiple-pc/" title="利用git解决hexo博客多PC间同步问题">http://chitanda.me/2015/06/18/hexo-sync-in-multiple-pc/</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/git/" rel="tag"># git</a>
+              <a href="/tags/hexo/" rel="tag"># hexo</a>
+              <a href="/tags/sync/" rel="tag"># sync</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2016/07/23/straight-insert-sort-algorithm/" rel="next" title="八大排序算法之直接插入排序">
+      八大排序算法之直接插入排序 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A3%B0%E6%98%8E"><span class="nav-number">1.</span> <span class="nav-text">声明</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%BA%E6%99%AF"><span class="nav-number">2.</span> <span class="nav-text">场景</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%99%BE%E5%BA%A6%E4%BA%91%EF%BC%8CDropbox%E7%AD%89%E7%BD%91%E7%9B%98%E4%BA%91%E5%A4%87%E4%BB%BD"><span class="nav-number">2.1.</span> <span class="nav-text">百度云，Dropbox等网盘云备份</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%A9%E7%94%A8%E7%AC%AC%E4%B8%89%E6%96%B9%E7%9A%84git%E6%9C%8D%E5%8A%A1%E5%A4%87%E4%BB%BD"><span class="nav-number">2.2.</span> <span class="nav-text">利用第三方的git服务备份</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E8%BF%87%E7%A8%8B"><span class="nav-number">3.</span> <span class="nav-text">配置过程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8A%E4%BC%A0blog%E5%88%B0git"><span class="nav-number">3.1.</span> <span class="nav-text">上传blog到git</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%86git%E7%9A%84%E5%86%85%E5%AE%B9%E5%90%8C%E6%AD%A5%E5%88%B0%E6%9C%AC%E5%9C%B0"><span class="nav-number">3.2.</span> <span class="nav-text">将git的内容同步到本地</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9B%B4%E6%96%B0%E6%96%87%E7%AB%A0%E5%90%8E%E7%9A%84%E5%90%8C%E6%AD%A5%E6%93%8D%E4%BD%9C"><span class="nav-number">3.3.</span> <span class="nav-text">更新文章后的同步操作</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%99git%E9%85%8D%E7%BD%AEsock5%E4%BB%A3%E7%90%86"><span class="nav-number">4.</span> <span class="nav-text">给git配置sock5代理</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="yonker"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">yonker</p>
+  <div class="site-description" itemprop="description">青春不常有，跟着感觉走</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">9</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/yonker" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;yonker" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:yonker.cheung@gmail.com" title="E-Mail → mailto:yonker.cheung@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://weibo.com/u/2205185803" title="Weibo → https:&#x2F;&#x2F;weibo.com&#x2F;u&#x2F;2205185803" rel="noopener" target="_blank"><i class="fab fa-weibo fa-fw"></i>Weibo</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://twitter.com/yonkercheung" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yonkercheung" rel="noopener" target="_blank"><i class="fab fa-twitter fa-fw"></i>Twitter</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://www.facebook.com/younger.cheung" title="FB Page → https:&#x2F;&#x2F;www.facebook.com&#x2F;younger.cheung" rel="noopener" target="_blank"><i class="fab fa-facebook fa-fw"></i>FB Page</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="fa fa-link fa-fw"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://baike.sogou.com/" title="http:&#x2F;&#x2F;baike.sogou.com&#x2F;" rel="noopener" target="_blank">搜狗百科</a>
+        </li>
+        <li class="links-of-blogroll-item">
+          <a href="http://www.csust.edu.cn/" title="http:&#x2F;&#x2F;www.csust.edu.cn&#x2F;" rel="noopener" target="_blank">长沙理工大学</a>
+        </li>
+        <li class="links-of-blogroll-item">
+          <a href="http://www.hrbeu.edu.cn/" title="http:&#x2F;&#x2F;www.hrbeu.edu.cn&#x2F;" rel="noopener" target="_blank">哈尔滨工程大学</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yonker</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
